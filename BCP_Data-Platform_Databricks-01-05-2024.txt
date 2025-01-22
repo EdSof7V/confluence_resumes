@@ -1,0 +1,57 @@
+IDEA PRINCIPAL
+Introducción práctica a manipulación de datos con Python usando NumPy, Pandas y visualización con Matplotlib.
+MINUTOS
+NumPy permite operaciones matemáticas avanzadas con arrays multidimensionales
+Pandas facilita manipulación de datos tabulares con DataFrames y Series
+Matplotlib ofrece herramientas para visualización de datos estadísticos
+Box plots permiten identificar outliers y distribución de datos
+Scatterplots ayudan a visualizar relaciones entre variables cuantitativas
+Histogramas muestran distribución de frecuencias de variables
+PLT.text permite agregar anotaciones personalizadas a gráficos
+Arrays NumPy requieren elementos del mismo tipo
+Operaciones entre arrays se realizan elemento por elemento
+DataFrames pueden filtrarse usando múltiples condiciones
+Join permite combinar datos de diferentes fuentes
+Value_counts() muestra frecuencia de valores únicos
+Describe() genera estadísticas descriptivas básicas
+Gráficos pueden personalizarse con colores y marcadores
+Drop() elimina columnas o filas innecesarias
+As_type() convierte tipos de datos entre columnas
+ACCIONES
+Revisar material adicional sobre manipulación de fechas
+Explorar librería Seaborn para visualización avanzada
+Estudiar documentación de Matplotlib para personalización
+Practicar casos de uso con datos reales
+Aplicar conceptos en proyecto final
+Entregar trabajo final en fecha coordinada
+Revisar notebook sobre series temporales
+Explorar documentación sobre colores y marcadores
+Practicar joins con múltiples tablas
+Estudiar manipulación de strings en Pandas
+Implementar filtros compuestos
+Analizar opciones de visualización
+Revisar opciones de formateo
+Practicar manipulación de DataFrames
+Explorar funciones estadísticas
+Documentar proceso de análisis
+DECISIONES
+Utilizar Python para análisis de datos por su versatilidad
+Implementar visualizaciones con Matplotlib por ser librería base
+Aplicar joins para relacionar diferentes fuentes de datos
+Filtrar outliers según criterios estadísticos
+Convertir tipos de datos según necesidad
+Personalizar gráficos para mejor interpretación
+Documentar proceso de análisis
+Mantener datos originales sin modificar
+Crear variables derivadas cuando sea necesario
+Validar calidad de datos
+Aplicar funciones de agregación
+Generar visualizaciones comparativas
+Implementar controles de calidad
+Mantener consistencia en formato
+Documentar transformaciones
+Validar resultados obtenidos
+DESAFÍOS
+Los principales desafíos identificados incluyen la necesidad de manejar datos faltantes o inconsistentes, y la importancia de elegir las visualizaciones apropiadas según el tipo de datos. También se mencionó la complejidad de trabajar con diferentes tipos de datos y la necesidad de mantener la consistencia en el análisis.
+PRÓXIMOS PASOS
+Se coordinará la fecha de entrega del trabajo final considerando el inicio del siguiente curso. Los estudiantes deberán aplicar los conceptos aprendidos en un caso práctico similar al revisado en clase, implementando manipulación de datos y visualizaciones. El material adicional y las instrucciones específicas se compartirán en el aula virtual.
