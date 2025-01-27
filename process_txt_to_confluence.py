@@ -1,5 +1,20 @@
 import os
 import requests
+import markdown
+import re
+
+def convert_markdown_to_confluence(content):
+    """Convierte Markdown a formato HTML para Confluence"""
+    # Convertir Markdown a HTML
+    html = markdown.markdown(content, extensions=['extra', 'toc'])
+    
+    # Ajustes específicos para Confluence
+    # Reemplazar los encabezados HTML con macros de Confluence
+    html = re.sub(r'<h1>(.*?)</h1>', r'h1. \1', html)
+    html = re.sub(r'<h2>(.*?)</h2>', r'h2. \1', html)
+    html = re.sub(r'<h3>(.*?)</h3>', r'h3. \1', html)
+    
+    return html
 
 def check_page_exists(base_url, username, api_token, space_key, title):
     """Verifica si una página existe y retorna su ID si existe"""
@@ -25,6 +40,9 @@ def create_or_get_page(base_url, username, api_token, space_key, title, content,
     auth = (username, api_token)
     headers = {"Content-Type": "application/json"}
     
+    # Convertir el contenido Markdown a formato Confluence
+    confluence_content = convert_markdown_to_confluence(content)
+    
     if existing_page_id:
         # Si la página existe, obtener la versión actual
         page_url = f"{url}/{existing_page_id}"
@@ -39,7 +57,7 @@ def create_or_get_page(base_url, username, api_token, space_key, title, content,
             "type": "page",
             "body": {
                 "storage": {
-                    "value": content,
+                    "value": confluence_content,
                     "representation": "storage"
                 }
             }
@@ -63,7 +81,7 @@ def create_or_get_page(base_url, username, api_token, space_key, title, content,
             "space": {"key": space_key},
             "body": {
                 "storage": {
-                    "value": content,
+                    "value": confluence_content,
                     "representation": "storage"
                 }
             }
@@ -80,41 +98,6 @@ def create_or_get_page(base_url, username, api_token, space_key, title, content,
         response.raise_for_status()
         return response.json()["id"]
 
-def update_page_content(base_url, username, api_token, page_id, new_content):
-    """Actualiza el contenido de una página existente"""
-    url = f"{base_url}/rest/api/content/{page_id}"
-    auth = (username, api_token)
-    
-    # Obtener la versión actual
-    response = requests.get(url, auth=auth)
-    response.raise_for_status()
-    current_version = response.json()['version']['number']
-    current_content = response.json()['body']['storage']['value']
-    
-    # Agregar el nuevo contenido al existente
-    updated_content = current_content + "\n" + new_content
-    
-    # Actualizar la página
-    data = {
-        "version": {"number": current_version + 1},
-        "title": response.json()['title'],
-        "type": "page",
-        "body": {
-            "storage": {
-                "value": updated_content,
-                "representation": "storage"
-            }
-        }
-    }
-    
-    response = requests.put(
-        url,
-        json=data,
-        auth=(username, api_token),
-        headers={"Content-Type": "application/json"}
-    )
-    response.raise_for_status()
-
 def main():
     # Leer variables de entorno
     base_url = os.environ["CONFLUENCE_BASE_URL"].rstrip('/')
@@ -122,16 +105,16 @@ def main():
     api_token = os.environ["CONFLUENCE_API_TOKEN"]
     space_key = os.environ["SPACE_KEY"]
 
-    # Buscar archivos .txt en el repositorio
+    # Buscar archivos .md en el repositorio
     for root, _, files in os.walk("."):
         for file in files:
-            if file.endswith(".txt"):
+            if file.endswith(".md"):
                 file_path = os.path.join(root, file)
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding='utf-8') as f:
                     content = f.read()
 
                 # Parsear el nombre del archivo para crear jerarquías
-                parts = file.replace(".txt", "").split("_")
+                parts = file.replace(".md", "").split("_")
                 if len(parts) < 3:
                     print(f"Skipping file {file} as it doesn't follow the expected format.")
                     continue
@@ -146,25 +129,21 @@ def main():
 
                 try:
                     # Crear o obtener página principal (level 1)
-                    level1_content = "<p>Documentación principal</p>"
+                    level1_content = "h1. Documentación Principal"
                     level1_id = create_or_get_page(
                         base_url, username, api_token, space_key, level1, level1_content
                     )
-                    print(f"Level 1 page ID: {level1_id}")
 
                     # Crear o obtener subpágina (level 2)
-                    level2_content = "<p>Contenido de la plataforma</p>"
+                    level2_content = "h2. Contenido de la Plataforma"
                     level2_id = create_or_get_page(
                         base_url, username, api_token, space_key, level2, level2_content, parent_id=level1_id
                     )
-                    print(f"Level 2 page ID: {level2_id}")
 
                     # Crear la página de contenido (level 3) o actualizar si existe
-                    level3_content = f"<p>{content}</p>"
                     level3_id = create_or_get_page(
-                        base_url, username, api_token, space_key, level3, level3_content, parent_id=level2_id
+                        base_url, username, api_token, space_key, level3, content, parent_id=level2_id
                     )
-                    print(f"Level 3 page ID: {level3_id}")
                     
                     print(f"Successfully processed {file}")
                     
