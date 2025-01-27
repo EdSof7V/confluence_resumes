@@ -1,6 +1,25 @@
 import os
 import requests
 
+def print_masked_secrets():
+    """Imprime las variables de secretos de forma segura, mostrando solo los primeros y últimos caracteres."""
+    secrets = {
+        "CONFLUENCE_BASE_URL": os.environ.get("CONFLUENCE_BASE_URL", ""),
+        "CONFLUENCE_USERNAME": os.environ.get("CONFLUENCE_USERNAME", ""),
+        "CONFLUENCE_API_TOKEN": os.environ.get("CONFLUENCE_API_TOKEN", ""),
+        "SPACE_KEY": os.environ.get("SPACE_KEY", "")
+    }
+    
+    print("\n=== Variables de Entorno ===")
+    for key, value in secrets.items():
+        if value:
+            # Muestra solo los primeros 4 y últimos 4 caracteres si el valor es lo suficientemente largo
+            masked_value = value[:4] + "*" * (len(value) - 8) + value[-4:] if len(value) > 8 else "****"
+            print(f"{key}: {masked_value}")
+        else:
+            print(f"{key}: No configurado")
+    print("========================\n")
+
 def create_confluence_page(base_url, username, api_token, space_key, title, content, parent_id=None):
     url = f"{base_url}/rest/api/content"
     headers = {
@@ -26,6 +45,9 @@ def create_confluence_page(base_url, username, api_token, space_key, title, cont
     return response.json()["id"]
 
 def main():
+    # Imprimir variables de secretos de forma segura
+    print_masked_secrets()
+    
     # Leer variables de entorno
     base_url = os.environ["CONFLUENCE_BASE_URL"]
     username = os.environ["CONFLUENCE_USERNAME"]
@@ -54,22 +76,27 @@ def main():
                 print(f"Processing file: {file}")
                 print(f"Hierarchy: {level1} -> {level2} -> {level3}")
 
-                # Crear páginas en Confluence
-                print("Creating level 1 page...")
-                level1_id = create_confluence_page(
-                    base_url, username, api_token, space_key, level1, f"<p>{level1} summary</p>"
-                )
+                try:
+                    # Crear páginas en Confluence
+                    print("Creating level 1 page...")
+                    level1_id = create_confluence_page(
+                        base_url, username, api_token, space_key, level1, f"<p>{level1} summary</p>"
+                    )
 
-                print("Creating level 2 page...")
-                level2_id = create_confluence_page(
-                    base_url, username, api_token, space_key, level2, f"<p>{level2} summary</p>", parent_id=level1_id
-                )
+                    print("Creating level 2 page...")
+                    level2_id = create_confluence_page(
+                        base_url, username, api_token, space_key, level2, f"<p>{level2} summary</p>", parent_id=level1_id
+                    )
 
-                print("Creating level 3 page...")
-                create_confluence_page(
-                    base_url, username, api_token, space_key, level3, f"<p>{content}</p>", parent_id=level2_id
-                )
-                print(f"Uploaded hierarchy for {file} successfully.")
+                    print("Creating level 3 page...")
+                    create_confluence_page(
+                        base_url, username, api_token, space_key, level3, f"<p>{content}</p>", parent_id=level2_id
+                    )
+                    print(f"Uploaded hierarchy for {file} successfully.")
+                    
+                except requests.exceptions.RequestException as e:
+                    print(f"Error uploading {file}: {str(e)}")
+                    continue
 
 if __name__ == "__main__":
     main()
