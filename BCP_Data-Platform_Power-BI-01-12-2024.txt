@@ -1,0 +1,16 @@
+Definición:
+Power BI es una herramienta de análisis de negocios de Microsoft que proporciona capacidades de visualización de datos y generación de informes interactivos. Permite a los usuarios conectar, modelar y visualizar datos de diversas fuentes para obtener información valiosa y tomar decisiones informadas.
+
+Puntos principales:
+1. Conexión a múltiples fuentes de datos: Power BI puede conectarse a una amplia variedad de fuentes de datos, incluyendo bases de datos, servicios en la nube, archivos de Excel y más.
+2. Modelado de datos: Permite a los usuarios transformar y limpiar datos, crear relaciones entre diferentes conjuntos de datos y construir modelos de datos complejos.
+3. Visualización interactiva: Ofrece una amplia gama de visualizaciones interactivas, como gráficos, mapas y tablas, que permiten a los usuarios explorar y analizar datos de manera intuitiva.
+4. Informes y paneles: Los usuarios pueden crear informes y paneles personalizados que se pueden compartir con otros miembros de la organización.
+5. Actualización automática: Power BI permite la actualización automática de datos, asegurando que los informes y paneles siempre muestren la información más reciente.
+
+Ventajas:
+1. Facilidad de uso: Power BI tiene una interfaz intuitiva y fácil de usar, lo que permite a los usuarios sin conocimientos técnicos profundos crear informes y visualizaciones.
+2. Integración con otros productos de Microsoft: Se integra perfectamente con otras herramientas de Microsoft, como Excel, Azure y SharePoint, facilitando el flujo de trabajo y la colaboración.
+3. Escalabilidad: Power BI puede manejar grandes volúmenes de datos y escalar según las necesidades de la organización.
+4. Accesibilidad: Los informes y paneles de Power BI se pueden acceder desde cualquier dispositivo con conexión a internet, lo que permite a los usuarios tomar decisiones informadas en cualquier momento y lugar.
+5. Comunidad y soporte: Power BI cuenta con una gran comunidad de usuarios y un amplio soporte técnico, lo que facilita la resolución de problemas y el aprendizaje continuo.

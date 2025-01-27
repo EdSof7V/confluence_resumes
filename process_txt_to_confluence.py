@@ -1,111 +1,126 @@
 import os
 import requests
-import base64
 
-def print_environment_variables():
-    """Imprime las variables de entorno sin enmascarar"""
-    secrets = {
-        "CONFLUENCE_BASE_URL": os.environ.get("CONFLUENCE_BASE_URL", ""),
-        "CONFLUENCE_USERNAME": os.environ.get("CONFLUENCE_USERNAME", ""),
-        "CONFLUENCE_API_TOKEN": os.environ.get("CONFLUENCE_API_TOKEN", ""),
-        "SPACE_KEY": os.environ.get("SPACE_KEY", "")
-    }
-    
-    print("\n=== Variables de Entorno ===")
-    for key, value in secrets.items():
-        print(f"{key}: {value}")
-    print("========================\n")
-
-def test_confluence_connection(base_url, username, api_token):
-    """Prueba la conexión a Confluence y muestra información detallada en caso de error"""
+def check_page_exists(base_url, username, api_token, space_key, title):
+    """Verifica si una página existe y retorna su ID si existe"""
     url = f"{base_url}/rest/api/content"
-    
-    # Crear el header de autorización manualmente para debugging
-    auth_string = f"{username}:{api_token}"
-    auth_bytes = auth_string.encode('ascii')
-    base64_auth = base64.b64encode(auth_bytes).decode('ascii')
-    
-    headers = {
-        "Authorization": f"Basic {base64_auth}",
-        "Content-Type": "application/json",
+    auth = (username, api_token)
+    params = {
+        'spaceKey': space_key,
+        'title': title,
+        'expand': 'version'
     }
     
-    try:
-        response = requests.get(url, headers=headers)
-        
-        print("\n=== Test de Conexión ===")
-        print(f"URL: {url}")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Headers: {dict(response.headers)}")
-        
-        if response.status_code == 401:
-            print("\nError de Autenticación detectado:")
-            print("1. Verifica que el username sea el correo completo")
-            print("2. Confirma que el API token sea válido")
-            print("3. Asegúrate que la URL de Confluence sea correcta")
-            print(f"4. Auth Header (for debugging): Basic {base64_auth}")
-        
+    response = requests.get(url, auth=auth, params=params)
+    response.raise_for_status()
+    
+    results = response.json().get('results', [])
+    return results[0]['id'] if results else None
+
+def create_or_get_page(base_url, username, api_token, space_key, title, content, parent_id=None):
+    """Crea una página nueva o actualiza una existente"""
+    existing_page_id = check_page_exists(base_url, username, api_token, space_key, title)
+    
+    url = f"{base_url}/rest/api/content"
+    auth = (username, api_token)
+    headers = {"Content-Type": "application/json"}
+    
+    if existing_page_id:
+        # Si la página existe, obtener la versión actual
+        page_url = f"{url}/{existing_page_id}"
+        response = requests.get(page_url, auth=auth)
         response.raise_for_status()
-        print("Conexión exitosa!")
-        print("========================\n")
+        current_version = response.json()['version']['number']
         
-    except requests.exceptions.RequestException as e:
-        print(f"\nError de conexión: {str(e)}")
-        print("========================\n")
-        raise
+        # Actualizar la página existente
+        data = {
+            "version": {"number": current_version + 1},
+            "title": title,
+            "type": "page",
+            "body": {
+                "storage": {
+                    "value": content,
+                    "representation": "storage"
+                }
+            }
+        }
+        if parent_id:
+            data["ancestors"] = [{"id": parent_id}]
+            
+        response = requests.put(
+            f"{url}/{existing_page_id}",
+            json=data,
+            auth=auth,
+            headers=headers
+        )
+        response.raise_for_status()
+        return existing_page_id
+    else:
+        # Crear nueva página
+        data = {
+            "type": "page",
+            "title": title,
+            "space": {"key": space_key},
+            "body": {
+                "storage": {
+                    "value": content,
+                    "representation": "storage"
+                }
+            }
+        }
+        if parent_id:
+            data["ancestors"] = [{"id": parent_id}]
+            
+        response = requests.post(
+            url,
+            json=data,
+            auth=auth,
+            headers=headers
+        )
+        response.raise_for_status()
+        return response.json()["id"]
 
-def create_confluence_page(base_url, username, api_token, space_key, title, content, parent_id=None):
-    url = f"{base_url}/rest/api/content"
+def update_page_content(base_url, username, api_token, page_id, new_content):
+    """Actualiza el contenido de una página existente"""
+    url = f"{base_url}/rest/api/content/{page_id}"
+    auth = (username, api_token)
     
-    # Crear el header de autorización manualmente
-    auth_string = f"{username}:{api_token}"
-    auth_bytes = auth_string.encode('ascii')
-    base64_auth = base64.b64encode(auth_bytes).decode('ascii')
+    # Obtener la versión actual
+    response = requests.get(url, auth=auth)
+    response.raise_for_status()
+    current_version = response.json()['version']['number']
+    current_content = response.json()['body']['storage']['value']
     
-    headers = {
-        "Authorization": f"Basic {base64_auth}",
-        "Content-Type": "application/json",
-    }
+    # Agregar el nuevo contenido al existente
+    updated_content = current_content + "\n" + new_content
     
+    # Actualizar la página
     data = {
+        "version": {"number": current_version + 1},
+        "title": response.json()['title'],
         "type": "page",
-        "title": title,
-        "space": {"key": space_key},
         "body": {
             "storage": {
-                "value": content,
-                "representation": "storage",
+                "value": updated_content,
+                "representation": "storage"
             }
-        },
+        }
     }
-    if parent_id:
-        data["ancestors"] = [{"id": parent_id}]
-
-    response = requests.post(url, json=data, headers=headers)
     
-    if response.status_code != 200:
-        print(f"\nError en create_confluence_page:")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response: {response.text}")
-        print(f"Request URL: {url}")
-        print(f"Request Headers: {headers}")
-        print(f"Request Data: {data}")
-    
+    response = requests.put(
+        url,
+        json=data,
+        auth=(username, api_token),
+        headers={"Content-Type": "application/json"}
+    )
     response.raise_for_status()
-    return response.json()["id"]
 
 def main():
-    # Imprimir variables de entorno
-    print_environment_variables()
-    
     # Leer variables de entorno
-    base_url = os.environ["CONFLUENCE_BASE_URL"].rstrip('/')  # Eliminar trailing slash si existe
+    base_url = os.environ["CONFLUENCE_BASE_URL"].rstrip('/')
     username = os.environ["CONFLUENCE_USERNAME"]
     api_token = os.environ["CONFLUENCE_API_TOKEN"]
     space_key = os.environ["SPACE_KEY"]
-
-    # Probar conexión antes de procesar archivos
-    test_confluence_connection(base_url, username, api_token)
 
     # Buscar archivos .txt en el repositorio
     for root, _, files in os.walk("."):
@@ -124,32 +139,38 @@ def main():
                 # Descomponer jerarquía
                 level1 = parts[0]  # Ej: "BCP"
                 level2 = parts[1].replace("-", " ")  # Ej: "Data Platform"
-                level3 = parts[2].replace("-", " ")  # Ej: "Databricks 01052025"
+                level3 = parts[2].replace("-", " ")  # Ej: "Databricks 31 10 2024"
 
                 print(f"Processing file: {file}")
                 print(f"Hierarchy: {level1} -> {level2} -> {level3}")
 
                 try:
-                    # Crear páginas en Confluence
-                    print("Creating level 1 page...")
-                    level1_id = create_confluence_page(
-                        base_url, username, api_token, space_key, level1, f"<p>{level1} summary</p>"
+                    # Crear o obtener página principal (level 1)
+                    level1_content = "<p>Documentación principal</p>"
+                    level1_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level1, level1_content
                     )
+                    print(f"Level 1 page ID: {level1_id}")
 
-                    print("Creating level 2 page...")
-                    level2_id = create_confluence_page(
-                        base_url, username, api_token, space_key, level2, f"<p>{level2} summary</p>", parent_id=level1_id
+                    # Crear o obtener subpágina (level 2)
+                    level2_content = "<p>Contenido de la plataforma</p>"
+                    level2_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level2, level2_content, parent_id=level1_id
                     )
+                    print(f"Level 2 page ID: {level2_id}")
 
-                    print("Creating level 3 page...")
-                    create_confluence_page(
-                        base_url, username, api_token, space_key, level3, f"<p>{content}</p>", parent_id=level2_id
+                    # Crear la página de contenido (level 3) o actualizar si existe
+                    level3_content = f"<p>{content}</p>"
+                    level3_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level3, level3_content, parent_id=level2_id
                     )
-                    print(f"Uploaded hierarchy for {file} successfully.")
+                    print(f"Level 3 page ID: {level3_id}")
+                    
+                    print(f"Successfully processed {file}")
                     
                 except requests.exceptions.RequestException as e:
-                    print(f"Error uploading {file}: {str(e)}")
-                    raise  # Re-raise the exception to fail the workflow
+                    print(f"Error processing {file}: {str(e)}")
+                    raise
 
 if __name__ == "__main__":
     main()

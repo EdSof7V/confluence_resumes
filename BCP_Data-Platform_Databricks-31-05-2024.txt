@@ -1,57 +1,63 @@
 IDEA PRINCIPAL
-Introducción práctica a manipulación de datos con Python usando NumPy, Pandas y visualización con Matplotlib.
+Introducción práctica a la manipulación de datos con Python, explorando el uso de NumPy, Pandas, y la visualización de datos mediante Matplotlib.
+
 MINUTOS
-NumPy permite operaciones matemáticas avanzadas con arrays multidimensionales
-Pandas facilita manipulación de datos tabulares con DataFrames y Series
-Matplotlib ofrece herramientas para visualización de datos estadísticos
-Box plots permiten identificar outliers y distribución de datos
-Scatterplots ayudan a visualizar relaciones entre variables cuantitativas
-Histogramas muestran distribución de frecuencias de variables
-PLT.text permite agregar anotaciones personalizadas a gráficos
-Arrays NumPy requieren elementos del mismo tipo
-Operaciones entre arrays se realizan elemento por elemento
-DataFrames pueden filtrarse usando múltiples condiciones
-Join permite combinar datos de diferentes fuentes
-Value_counts() muestra frecuencia de valores únicos
-Describe() genera estadísticas descriptivas básicas
-Gráficos pueden personalizarse con colores y marcadores
-Drop() elimina columnas o filas innecesarias
-As_type() convierte tipos de datos entre columnas
+NumPy: Permite realizar operaciones matemáticas avanzadas sobre arrays multidimensionales.
+Los arrays de NumPy requieren elementos del mismo tipo.
+Las operaciones entre arrays se realizan elemento por elemento.
+Pandas: Facilita el trabajo con datos tabulares mediante DataFrames y Series.
+Filtrado de DataFrames con múltiples condiciones.
+Uso de join para combinar datos de distintas fuentes.
+Funciones clave:
+value_counts(): Muestra la frecuencia de valores únicos.
+describe(): Genera estadísticas descriptivas básicas.
+drop(): Elimina columnas o filas innecesarias.
+astype(): Convierte tipos de datos entre columnas.
+Matplotlib: Herramientas para crear gráficos y personalizarlos.
+Tipos de gráficos:
+Box plots: Identifican outliers y muestran la distribución de datos.
+Scatterplots: Visualizan relaciones entre variables cuantitativas.
+Histogramas: Representan la distribución de frecuencias.
+Personalización de gráficos:
+Uso de colores, marcadores y anotaciones con plt.text().
 ACCIONES
-Revisar material adicional sobre manipulación de fechas
-Explorar librería Seaborn para visualización avanzada
-Estudiar documentación de Matplotlib para personalización
-Practicar casos de uso con datos reales
-Aplicar conceptos en proyecto final
-Entregar trabajo final en fecha coordinada
-Revisar notebook sobre series temporales
-Explorar documentación sobre colores y marcadores
-Practicar joins con múltiples tablas
-Estudiar manipulación de strings en Pandas
-Implementar filtros compuestos
-Analizar opciones de visualización
-Revisar opciones de formateo
-Practicar manipulación de DataFrames
-Explorar funciones estadísticas
-Documentar proceso de análisis
+
+Revisar material adicional sobre:
+Manipulación de fechas en Pandas.
+Uso avanzado de la librería Seaborn para visualizaciones.
+Documentación de Matplotlib para personalización de gráficos.
+Practicar con datos reales:
+Aplicar conceptos en casos de uso.
+Implementar filtros compuestos y joins con múltiples tablas.
+Explorar opciones de visualización y formateo.
+Preparar el proyecto final:
+Aplicar conceptos aprendidos en un caso práctico.
+Documentar el proceso de análisis, transformaciones y resultados obtenidos.
+Profundizar en técnicas clave:
+Manipulación de strings en Pandas.
+Uso de funciones estadísticas y series temporales.
 DECISIONES
-Utilizar Python para análisis de datos por su versatilidad
-Implementar visualizaciones con Matplotlib por ser librería base
-Aplicar joins para relacionar diferentes fuentes de datos
-Filtrar outliers según criterios estadísticos
-Convertir tipos de datos según necesidad
-Personalizar gráficos para mejor interpretación
-Documentar proceso de análisis
-Mantener datos originales sin modificar
-Crear variables derivadas cuando sea necesario
-Validar calidad de datos
-Aplicar funciones de agregación
-Generar visualizaciones comparativas
-Implementar controles de calidad
-Mantener consistencia en formato
-Documentar transformaciones
-Validar resultados obtenidos
+
+Utilizar Python por su versatilidad en el análisis de datos.
+Implementar visualizaciones con Matplotlib como base.
+Aplicar técnicas avanzadas:
+Relacionar datos mediante joins.
+Filtrar outliers usando criterios estadísticos.
+Convertir tipos de datos según necesidades específicas.
+Personalizar gráficos para facilitar la interpretación.
+Garantizar la calidad y consistencia de los datos:
+Validar datos originales sin modificarlos.
+Crear variables derivadas cuando sea necesario.
+Documentar cada transformación realizada.
 DESAFÍOS
-Los principales desafíos identificados incluyen la necesidad de manejar datos faltantes o inconsistentes, y la importancia de elegir las visualizaciones apropiadas según el tipo de datos. También se mencionó la complejidad de trabajar con diferentes tipos de datos y la necesidad de mantener la consistencia en el análisis.
+Los principales desafíos incluyen:
+
+Manejo de datos faltantes o inconsistentes.
+Selección adecuada de visualizaciones según el tipo de datos.
+Trabajo con distintos tipos de datos manteniendo la consistencia del análisis.
 PRÓXIMOS PASOS
-Se coordinará la fecha de entrega del trabajo final considerando el inicio del siguiente curso. Los estudiantes deberán aplicar los conceptos aprendidos en un caso práctico similar al revisado en clase, implementando manipulación de datos y visualizaciones. El material adicional y las instrucciones específicas se compartirán en el aula virtual.
+Se coordinará la fecha de entrega del proyecto final considerando el inicio del siguiente curso. Los estudiantes deberán:
+
+Aplicar los conceptos aprendidos en un caso práctico similar al revisado en clase.
+Implementar técnicas de manipulación de datos y visualización.
+Consultar el material adicional y las instrucciones específicas disponibles en el aula virtual.
