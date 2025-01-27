@@ -1,8 +1,9 @@
 import os
 import requests
+import base64
 
-def print_masked_secrets():
-    """Imprime las variables de secretos de forma segura, mostrando solo los primeros y últimos caracteres."""
+def print_environment_variables():
+    """Imprime las variables de entorno sin enmascarar"""
     secrets = {
         "CONFLUENCE_BASE_URL": os.environ.get("CONFLUENCE_BASE_URL", ""),
         "CONFLUENCE_USERNAME": os.environ.get("CONFLUENCE_USERNAME", ""),
@@ -12,20 +13,60 @@ def print_masked_secrets():
     
     print("\n=== Variables de Entorno ===")
     for key, value in secrets.items():
-        if value:
-            # Muestra solo los primeros 4 y últimos 4 caracteres si el valor es lo suficientemente largo
-            masked_value = value[:4] + "*" * (len(value) - 8) + value[-4:] if len(value) > 8 else "****"
-            print(f"{key}: {masked_value}")
-        else:
-            print(f"{key}: No configurado")
+        print(f"{key}: {value}")
     print("========================\n")
+
+def test_confluence_connection(base_url, username, api_token):
+    """Prueba la conexión a Confluence y muestra información detallada en caso de error"""
+    url = f"{base_url}/rest/api/content"
+    
+    # Crear el header de autorización manualmente para debugging
+    auth_string = f"{username}:{api_token}"
+    auth_bytes = auth_string.encode('ascii')
+    base64_auth = base64.b64encode(auth_bytes).decode('ascii')
+    
+    headers = {
+        "Authorization": f"Basic {base64_auth}",
+        "Content-Type": "application/json",
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        
+        print("\n=== Test de Conexión ===")
+        print(f"URL: {url}")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Headers: {dict(response.headers)}")
+        
+        if response.status_code == 401:
+            print("\nError de Autenticación detectado:")
+            print("1. Verifica que el username sea el correo completo")
+            print("2. Confirma que el API token sea válido")
+            print("3. Asegúrate que la URL de Confluence sea correcta")
+            print(f"4. Auth Header (for debugging): Basic {base64_auth}")
+        
+        response.raise_for_status()
+        print("Conexión exitosa!")
+        print("========================\n")
+        
+    except requests.exceptions.RequestException as e:
+        print(f"\nError de conexión: {str(e)}")
+        print("========================\n")
+        raise
 
 def create_confluence_page(base_url, username, api_token, space_key, title, content, parent_id=None):
     url = f"{base_url}/rest/api/content"
+    
+    # Crear el header de autorización manualmente
+    auth_string = f"{username}:{api_token}"
+    auth_bytes = auth_string.encode('ascii')
+    base64_auth = base64.b64encode(auth_bytes).decode('ascii')
+    
     headers = {
-        "Authorization": f"Basic {requests.auth._basic_auth_str(username, api_token)}",
+        "Authorization": f"Basic {base64_auth}",
         "Content-Type": "application/json",
     }
+    
     data = {
         "type": "page",
         "title": title,
@@ -41,18 +82,30 @@ def create_confluence_page(base_url, username, api_token, space_key, title, cont
         data["ancestors"] = [{"id": parent_id}]
 
     response = requests.post(url, json=data, headers=headers)
+    
+    if response.status_code != 200:
+        print(f"\nError en create_confluence_page:")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.text}")
+        print(f"Request URL: {url}")
+        print(f"Request Headers: {headers}")
+        print(f"Request Data: {data}")
+    
     response.raise_for_status()
     return response.json()["id"]
 
 def main():
-    # Imprimir variables de secretos de forma segura
-    print_masked_secrets()
+    # Imprimir variables de entorno
+    print_environment_variables()
     
     # Leer variables de entorno
-    base_url = os.environ["CONFLUENCE_BASE_URL"]
+    base_url = os.environ["CONFLUENCE_BASE_URL"].rstrip('/')  # Eliminar trailing slash si existe
     username = os.environ["CONFLUENCE_USERNAME"]
     api_token = os.environ["CONFLUENCE_API_TOKEN"]
     space_key = os.environ["SPACE_KEY"]
+
+    # Probar conexión antes de procesar archivos
+    test_confluence_connection(base_url, username, api_token)
 
     # Buscar archivos .txt en el repositorio
     for root, _, files in os.walk("."):
@@ -96,7 +149,7 @@ def main():
                     
                 except requests.exceptions.RequestException as e:
                     print(f"Error uploading {file}: {str(e)}")
-                    continue
+                    raise  # Re-raise the exception to fail the workflow
 
 if __name__ == "__main__":
     main()
