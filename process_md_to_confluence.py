@@ -1,222 +1,175 @@
 import os
 import requests
-import markdown
-import re
-from bs4 import BeautifulSoup
-from datetime import datetime
-import base64
-import json
 
-def verify_credentials(base_url, username, api_token):
-    """Verifica las credenciales de Confluence"""
-    try:
-        # Intentar obtener información del usuario actual
-        auth_url = f"{base_url}/rest/api/user/current"
-        response = requests.get(
-            auth_url,
-            auth=(username, api_token),
-            headers={"Accept": "application/json"}
-        )
-        
-        if response.status_code == 200:
-            user_info = response.json()
-            print(f"Autenticación exitosa como: {user_info.get('displayName', username)}")
-            return True
-        elif response.status_code == 401:
-            print("Error de autenticación: Credenciales inválidas")
-            return False
-        elif response.status_code == 403:
-            print("Error de permisos: El token no tiene los permisos necesarios")
-            return False
-        else:
-            print(f"Error desconocido: Status code {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"Error al verificar credenciales: {str(e)}")
-        return False
+def check_page_exists(base_url, username, api_token, space_key, title):
+    """Verifica si una página existe y retorna su ID si existe"""
+    url = f"{base_url}/rest/api/content"
+    auth = (username, api_token)
+    params = {
+        'spaceKey': space_key,
+        'title': title,
+        'expand': 'version'
+    }
+    
+    response = requests.get(url, auth=auth, params=params)
+    response.raise_for_status()
+    
+    results = response.json().get('results', [])
+    return results[0]['id'] if results else None
 
-def check_space_access(base_url, username, api_token, space_key):
-    """Verifica el acceso al espacio de Confluence"""
-    try:
-        space_url = f"{base_url}/rest/api/space/{space_key}"
-        response = requests.get(
-            space_url,
-            auth=(username, api_token),
-            headers={"Accept": "application/json"}
-        )
+def create_or_get_page(base_url, username, api_token, space_key, title, content, parent_id=None):
+    """Crea una página nueva o actualiza una existente"""
+    existing_page_id = check_page_exists(base_url, username, api_token, space_key, title)
+    
+    url = f"{base_url}/rest/api/content"
+    auth = (username, api_token)
+    headers = {"Content-Type": "application/json"}
+    
+    if existing_page_id:
+        # Si la página existe, obtener la versión actual
+        page_url = f"{url}/{existing_page_id}"
+        response = requests.get(page_url, auth=auth)
+        response.raise_for_status()
+        current_version = response.json()['version']['number']
         
-        if response.status_code == 200:
-            space_info = response.json()
-            print(f"Acceso confirmado al espacio: {space_info.get('name', space_key)}")
-            return True
-        else:
-            print(f"Error al acceder al espacio {space_key}: Status code {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"Error al verificar acceso al espacio: {str(e)}")
-        return False
-
-def create_or_update_page(base_url, username, api_token, space_key, title, content, parent_id=None):
-    """Crea o actualiza una página en Confluence"""
-    try:
-        # Verificar si la página existe
-        url = f"{base_url}/rest/api/content"
-        auth = (username, api_token)
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-        
-        # Buscar página existente
-        search_params = {
-            'spaceKey': space_key,
-            'title': title,
-            'expand': 'version'
-        }
-        
-        search_response = requests.get(url, auth=auth, headers=headers, params=search_params)
-        search_response.raise_for_status()
-        
-        results = search_response.json().get('results', [])
-        
-        if results:
-            # Actualizar página existente
-            page_id = results[0]['id']
-            version = results[0]['version']['number']
-            
-            update_data = {
-                "version": {"number": version + 1},
-                "title": title,
-                "type": "page",
-                "body": {
-                    "storage": {
-                        "value": content,
-                        "representation": "storage"
-                    }
+        # Actualizar la página existente
+        data = {
+            "version": {"number": current_version + 1},
+            "title": title,
+            "type": "page",
+            "body": {
+                "storage": {
+                    "value": content,
+                    "representation": "storage"
                 }
             }
+        }
+        if parent_id:
+            data["ancestors"] = [{"id": parent_id}]
             
-            if parent_id:
-                update_data["ancestors"] = [{"id": parent_id}]
-            
-            update_response = requests.put(
-                f"{url}/{page_id}",
-                json=update_data,
-                auth=auth,
-                headers=headers
-            )
-            update_response.raise_for_status()
-            return page_id
-            
-        else:
-            # Crear nueva página
-            create_data = {
-                "type": "page",
-                "title": title,
-                "space": {"key": space_key},
-                "body": {
-                    "storage": {
-                        "value": content,
-                        "representation": "storage"
-                    }
+        response = requests.put(
+            f"{url}/{existing_page_id}",
+            json=data,
+            auth=auth,
+            headers=headers
+        )
+        response.raise_for_status()
+        return existing_page_id
+    else:
+        # Crear nueva página
+        data = {
+            "type": "page",
+            "title": title,
+            "space": {"key": space_key},
+            "body": {
+                "storage": {
+                    "value": content,
+                    "representation": "storage"
                 }
             }
+        }
+        if parent_id:
+            data["ancestors"] = [{"id": parent_id}]
             
-            if parent_id:
-                create_data["ancestors"] = [{"id": parent_id}]
-            
-            create_response = requests.post(
-                url,
-                json=create_data,
-                auth=auth,
-                headers=headers
-            )
-            create_response.raise_for_status()
-            return create_response.json()["id"]
-            
-    except requests.exceptions.RequestException as e:
-        print(f"Error en la operación de página: {str(e)}")
-        if hasattr(e.response, 'text'):
-            print(f"Respuesta del servidor: {e.response.text}")
-        raise
+        response = requests.post(
+            url,
+            json=data,
+            auth=auth,
+            headers=headers
+        )
+        response.raise_for_status()
+        return response.json()["id"]
+
+def update_page_content(base_url, username, api_token, page_id, new_content):
+    """Actualiza el contenido de una página existente"""
+    url = f"{base_url}/rest/api/content/{page_id}"
+    auth = (username, api_token)
+    
+    # Obtener la versión actual
+    response = requests.get(url, auth=auth)
+    response.raise_for_status()
+    current_version = response.json()['version']['number']
+    current_content = response.json()['body']['storage']['value']
+    
+    # Agregar el nuevo contenido al existente
+    updated_content = current_content + "\n" + new_content
+    
+    # Actualizar la página
+    data = {
+        "version": {"number": current_version + 1},
+        "title": response.json()['title'],
+        "type": "page",
+        "body": {
+            "storage": {
+                "value": updated_content,
+                "representation": "storage"
+            }
+        }
+    }
+    
+    response = requests.put(
+        url,
+        json=data,
+        auth=(username, api_token),
+        headers={"Content-Type": "application/json"}
+    )
+    response.raise_for_status()
 
 def main():
-    # Obtener variables de entorno
-    base_url = os.environ.get("CONFLUENCE_BASE_URL", "").rstrip('/')
-    username = os.environ.get("CONFLUENCE_USERNAME", "")
-    api_token = os.environ.get("CONFLUENCE_API_TOKEN", "")
-    space_key = os.environ.get("SPACE_KEY", "")
+    # Leer variables de entorno
+    base_url = os.environ["CONFLUENCE_BASE_URL"].rstrip('/')
+    username = os.environ["CONFLUENCE_USERNAME"]
+    api_token = os.environ["CONFLUENCE_API_TOKEN"]
+    space_key = os.environ["SPACE_KEY"]
 
-    # Verificar variables requeridas
-    if not all([base_url, username, api_token, space_key]):
-        raise ValueError("Faltan variables de entorno requeridas")
-
-    print(f"\nIniciando proceso de carga a Confluence: {datetime.now()}")
-    print(f"URL Base: {base_url}")
-    print(f"Usuario: {username}")
-    print(f"Space Key: {space_key}")
-
-    # Verificar credenciales y acceso
-    if not verify_credentials(base_url, username, api_token):
-        raise Exception("Fallo en la verificación de credenciales")
-        
-    if not check_space_access(base_url, username, api_token, space_key):
-        raise Exception("Fallo en la verificación de acceso al espacio")
-
-    # Procesar archivos MD
+    # Buscar archivos .md en el repositorio
     for root, _, files in os.walk("."):
         for file in files:
             if file.endswith(".md"):
                 file_path = os.path.join(root, file)
-                print(f"\nProcesando archivo: {file_path}")
+                with open(file_path, "r") as f:
+                    content = f.read()
+
+                # Parsear el nombre del archivo para crear jerarquías
+                parts = file.replace(".md", "").split("_")
+                if len(parts) < 3:
+                    print(f"Skipping file {file} as it doesn't follow the expected format.")
+                    continue
+
+                # Descomponer jerarquía
+                level1 = parts[0]  # Ej: "BCP"
+                level2 = parts[1].replace("-", " ")  # Ej: "Data Platform"
+                level3 = parts[2].replace("-", " ")  # Ej: "Databricks 31 10 2024"
+
+                print(f"Processing file: {file}")
+                print(f"Hierarchy: {level1} -> {level2} -> {level3}")
 
                 try:
-                    with open(file_path, "r", encoding='utf-8') as f:
-                        content = f.read()
+                    # Crear o obtener página principal (level 1)
+                    level1_content = "<p>Documentación principal</p>"
+                    level1_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level1, level1_content
+                    )
+                    print(f"Level 1 page ID: {level1_id}")
 
-                    # Convertir MD a formato Confluence
-                    confluence_content = convert_md_to_confluence(content)
+                    # Crear o obtener subpágina (level 2)
+                    level2_content = "<p>Contenido de la plataforma</p>"
+                    level2_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level2, level2_content, parent_id=level1_id
+                    )
+                    print(f"Level 2 page ID: {level2_id}")
 
-                    # Parsear nombre del archivo
-                    parts = file.replace(".md", "").split("_")
-                    if len(parts) < 3:
-                        print(f"Omitiendo {file}: formato inválido")
-                        continue
-
-                    level1 = parts[0]
-                    level2 = parts[1].replace("-", " ")
-                    level3 = parts[2].replace("-", " ")
-
-                    print(f"Creando/actualizando jerarquía: {level1} -> {level2} -> {level3}")
-
-                    # Crear estructura jerárquica
-                    try:
-                        level1_id = create_or_update_page(
-                            base_url, username, api_token, space_key,
-                            level1, "<p>Documentación principal</p>"
-                        )
-                        print(f"Página nivel 1 creada/actualizada: {level1}")
-
-                        level2_id = create_or_update_page(
-                            base_url, username, api_token, space_key,
-                            level2, "<p>Contenido de la plataforma</p>",
-                            parent_id=level1_id
-                        )
-                        print(f"Página nivel 2 creada/actualizada: {level2}")
-
-                        level3_id = create_or_update_page(
-                            base_url, username, api_token, space_key,
-                            level3, confluence_content,
-                            parent_id=level2_id
-                        )
-                        print(f"Página nivel 3 creada/actualizada: {level3}")
-
-                    except Exception as e:
-                        print(f"Error al crear/actualizar páginas: {str(e)}")
-                        raise
-
-                except Exception as e:
-                    print(f"Error procesando {file}: {str(e)}")
+                    # Crear la página de contenido (level 3) o actualizar si existe
+                    level3_content = f"<p>{content}</p>"
+                    level3_id = create_or_get_page(
+                        base_url, username, api_token, space_key, level3, level3_content, parent_id=level2_id
+                    )
+                    print(f"Level 3 page ID: {level3_id}")
+                    
+                    print(f"Successfully processed {file}")
+                    
+                except requests.exceptions.RequestException as e:
+                    print(f"Error processing {file}: {str(e)}")
                     raise
 
 if __name__ == "__main__":
