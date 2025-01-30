@@ -122,16 +122,16 @@ def main():
     api_token = os.environ["CONFLUENCE_API_TOKEN"]
     space_key = os.environ["SPACE_KEY"]
 
-    # Buscar archivos .md en el repositorio
+    # Buscar archivos .txt en el repositorio
     for root, _, files in os.walk("."):
         for file in files:
-            if file.endswith(".md"):
+            if file.endswith(".txt"):
                 file_path = os.path.join(root, file)
                 with open(file_path, "r") as f:
                     content = f.read()
 
                 # Parsear el nombre del archivo para crear jerarquías
-                parts = file.replace(".md", "").split("_")
+                parts = file.replace(".txt", "").split("_")
                 if len(parts) < 3:
                     print(f"Skipping file {file} as it doesn't follow the expected format.")
                     continue
