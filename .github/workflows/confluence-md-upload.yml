@@ -1,13 +1,13 @@
-name: Upload to Confluence from TXT
+name: Upload to Confluence from Markdown
 
 on:
   push:
     paths:
-      - "*.txt"
+      - "*.md"
   workflow_dispatch:
 
 jobs:
-  process-txt-to-confluence:
+  process-md-to-confluence:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +22,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests markdown2
 
       - name: Print Environment Variables
         run: |
@@ -37,14 +37,14 @@ jobs:
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
           SPACE_KEY: ${{ secrets.SPACE_KEY }}
 
-      - name: Process TXT and Upload to Confluence
+      - name: Process Markdown and Upload to Confluence
         env:
           CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
           CONFLUENCE_USERNAME: ${{ secrets.CONFLUENCE_USERNAME }}
           SPACE_KEY: ${{ secrets.SPACE_KEY }}
         run: |
-          python process_txt_to_confluence.py
+          python process_md_to_confluence.py
 
       - name: Upload Process Log
         if: always()
@@ -53,5 +53,5 @@ jobs:
           name: process-log
           path: |
             *.log
-            *.txt
+            *.md
           retention-days: 5
