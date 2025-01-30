@@ -45,7 +45,7 @@ jobs:
           CONFLUENCE_USERNAME: ${{ secrets.CONFLUENCE_USERNAME }}
           SPACE_KEY: ${{ secrets.SPACE_KEY }}
         run: |
-          python process_txt_to_confluence.py
+          python process_md_to_confluence.py
 
       - name: Upload Process Log
         if: always()
