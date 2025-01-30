@@ -24,13 +24,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Print Environment Variables
+      - name: Unmask and Print Environment Variables
         run: |
+          echo "::remove-mask::${{ secrets.CONFLUENCE_BASE_URL }}"
+          echo "::remove-mask::${{ secrets.CONFLUENCE_USERNAME }}"
+          echo "::remove-mask::${{ secrets.SPACE_KEY }}"
+          
           echo "=== Environment Variables ==="
-          echo "CONFLUENCE_BASE_URL: $CONFLUENCE_BASE_URL"
-          echo "CONFLUENCE_USERNAME: $CONFLUENCE_USERNAME"
-          echo "CONFLUENCE_API_TOKEN: $CONFLUENCE_API_TOKEN"
-          echo "SPACE_KEY: $SPACE_KEY"
+          echo "CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}"
+          echo "CONFLUENCE_USERNAME: ${{ secrets.CONFLUENCE_USERNAME }}"
+          echo "SPACE_KEY: ${{ secrets.SPACE_KEY }}"
           echo "========================"
         env:
           CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
@@ -49,7 +52,7 @@ jobs:
 
       - name: Upload Process Log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: process-log
           path: |
